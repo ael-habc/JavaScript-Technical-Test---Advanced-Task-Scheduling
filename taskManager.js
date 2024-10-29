@@ -23,7 +23,7 @@ const tasks = [
     hoursRequired: 10,
     taskType: "bug",
     priority: 5,
-    dependencies: ["Feature A"],
+    dependencies: [],
   },
   {
     taskName: "Refactor C",
@@ -51,16 +51,9 @@ const tasks = [
   },
 ];
 
-// Function to sort tasks by priority (highest to lowest) and if it has dependencies
-
+// Function to sort tasks by priority (highest to lowest)
 const taskPriority = (tasks) => {
-  return tasks.sort((a, b) => {
-    if (a.dependencies.length > b.dependencies.length) return 1;
-    if (a.dependencies.length < b.dependencies.length) return -1;
-    if (a.priority > b.priority) return -1;
-    if (a.priority < b.priority) return 1;
-    return 0;
-  });
+  return tasks.sort((a, b) => b.priority - a.priority);
 };
 
 // Function to check if a task is already assigned to a developer
@@ -122,7 +115,39 @@ const assignTasksWithPriorityAndDependencies = (developers, tasks) => {
       }
     }
   });
-
+  priorityTasks.forEach((task) => {
+    // Check if the task is already assigned to a developer
+    if (!taskAssign(asignDevToTask, task)) {
+      // Loop through the developers and assign the task to the first developer that meets the requirements
+      for (let dev of developers) {
+        // Check if the developer meets the requirements | preferred type | skill level | max hours
+        if (
+          dev.preferredTaskType === task.taskType &&
+          dev.skillLevel >= task.difficulty &&
+          dev.maxHours >= task.hoursRequired
+        ) {
+          // Check if the task has dependencies
+          if (
+            task.dependencies.length === 0 ||
+            task.dependencies.every((dep) => !UnsignedTasks.includes(dep))
+          ) {
+            // Assign the task to the developer
+            asignDevToTask.forEach((devTask) => {
+              if (devTask.devName === dev.name) {
+                devTask.tasks.push(task.taskName);
+                devTask.totalHours += task.hoursRequired;
+                dev.maxHours -= task.hoursRequired; // Update dev's available hours
+                UnsignedTasks = UnsignedTasks.filter(
+                  (unsignedTask) => unsignedTask !== task.taskName
+                );
+              }
+            });
+            break;
+          }
+        }
+      }
+    }
+  });
   asignDevToTask.map((dev) => {
     if (UnsignedTasks.some((task) => dev.tasks.includes(task))) {
       dev.tasks.map((task) => {
@@ -135,6 +160,4 @@ const assignTasksWithPriorityAndDependencies = (developers, tasks) => {
   return [asignDevToTask, UnsignedTasks];
 };
 
-console.log(
-  assignTasksWithPriorityAndDependencies(developers, tasks)[0][0]?.tasks
-);
+console.log(assignTasksWithPriorityAndDependencies(developers, tasks));
