@@ -66,6 +66,15 @@ const taskAssign = (developers, task) => {
   return taskAssigned;
 };
 
+//function to count the task with most dependencies
+const countDependencies = (tasks) => {
+  let max = 0;
+  tasks.forEach((task) => {
+    if (task.dependencies.length > max) max = task.dependencies.length;
+  });
+  return max;
+};
+
 // main function to assign tasks to developers based on priority and dependencies
 const assignTasksWithPriorityAndDependencies = (developers, tasks) => {
   // Array to store developers with assigned tasks and hour count
@@ -78,85 +87,59 @@ const assignTasksWithPriorityAndDependencies = (developers, tasks) => {
   // Array to store tasks that are not assigned to any developer
   let UnsignedTasks = tasks.map((task) => task.taskName);
 
+  let max = countDependencies(tasks);
+
   // Sort tasks by priority
   const priorityTasks = taskPriority(tasks);
 
-  // Loop through the tasks and assign them to developers based on priority, preference, and dependencies
-  priorityTasks.forEach((task) => {
-    // Check if the task is already assigned to a developer
-    if (!taskAssign(asignDevToTask, task)) {
-      // Loop through the developers and assign the task to the first developer that meets the requirements
-      for (let dev of developers) {
-        // Check if the developer meets the requirements | preferred type | skill level | max hours
-        if (
-          dev.preferredTaskType === task.taskType &&
-          dev.skillLevel >= task.difficulty &&
-          dev.maxHours >= task.hoursRequired
-        ) {
-          // Check if the task has dependencies
+  for (let i = 0; i <= max; i++) {
+    // Loop through the tasks and assign them to developers based on priority, preference, and dependencies
+    priorityTasks.forEach((task) => {
+      // Check if the task is already assigned to a developer
+      if (!taskAssign(asignDevToTask, task)) {
+        // Loop through the developers and assign the task to the first developer that meets the requirements
+        for (let dev of developers) {
+          // Check if the developer meets the requirements | preferred type | skill level | max hours
           if (
-            task.dependencies.length === 0 ||
-            task.dependencies.every((dep) => !UnsignedTasks.includes(dep))
+            dev.preferredTaskType === task.taskType &&
+            dev.skillLevel >= task.difficulty &&
+            dev.maxHours >= task.hoursRequired
           ) {
-            // Assign the task to the developer
-            asignDevToTask.forEach((devTask) => {
-              if (devTask.devName === dev.name) {
-                devTask.tasks.push(task.taskName);
-                devTask.totalHours += task.hoursRequired;
-                dev.maxHours -= task.hoursRequired; // Update dev's available hours
-                UnsignedTasks = UnsignedTasks.filter(
-                  (unsignedTask) => unsignedTask !== task.taskName
-                );
-              }
-            });
-            break;
+            // Check if the task has dependencies
+            if (
+              task.dependencies.length === 0 ||
+            //   Check if all dependencies are already assigned to a developer
+              task.dependencies.every((dep) => !UnsignedTasks.includes(dep))
+            ) {
+              // Assign the task to the developer
+              asignDevToTask.forEach((devTask) => {
+                if (devTask.devName === dev.name) {
+                  devTask.tasks.push(task.taskName);
+                  devTask.totalHours += task.hoursRequired;
+                  dev.maxHours -= task.hoursRequired; 
+                  UnsignedTasks = UnsignedTasks.filter(
+                    (unsignedTask) => unsignedTask !== task.taskName
+                  );
+                }
+              });
+              break;
+            }
           }
         }
       }
-    }
-  });
-  priorityTasks.forEach((task) => {
-    // Check if the task is already assigned to a developer
-    if (!taskAssign(asignDevToTask, task)) {
-      // Loop through the developers and assign the task to the first developer that meets the requirements
-      for (let dev of developers) {
-        // Check if the developer meets the requirements | preferred type | skill level | max hours
-        if (
-          dev.preferredTaskType === task.taskType &&
-          dev.skillLevel >= task.difficulty &&
-          dev.maxHours >= task.hoursRequired
-        ) {
-          // Check if the task has dependencies
-          if (
-            task.dependencies.length === 0 ||
-            task.dependencies.every((dep) => !UnsignedTasks.includes(dep))
-          ) {
-            // Assign the task to the developer
-            asignDevToTask.forEach((devTask) => {
-              if (devTask.devName === dev.name) {
-                devTask.tasks.push(task.taskName);
-                devTask.totalHours += task.hoursRequired;
-                dev.maxHours -= task.hoursRequired; // Update dev's available hours
-                UnsignedTasks = UnsignedTasks.filter(
-                  (unsignedTask) => unsignedTask !== task.taskName
-                );
-              }
-            });
-            break;
-          }
-        }
-      }
-    }
-  });
-  asignDevToTask.map((dev) => {
-    if (UnsignedTasks.some((task) => dev.tasks.includes(task))) {
-      dev.tasks.map((task) => {
-        UnsignedTasks = UnsignedTasks.filter(
-          (unsignedTask) => unsignedTask !== task
-        );
-      });
-    }
-  });
+    });
+  }
+
+  
+//   asignDevToTask.map((dev) => {
+//     if (UnsignedTasks.some((task) => dev.tasks.includes(task))) {
+//       dev.tasks.map((task) => {
+//         UnsignedTasks = UnsignedTasks.filter(
+//           (unsignedTask) => unsignedTask !== task
+//         );
+//       });
+//     }
+//   });
   return [asignDevToTask, UnsignedTasks];
 };
 
